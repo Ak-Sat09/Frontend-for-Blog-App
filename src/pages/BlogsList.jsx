@@ -223,7 +223,7 @@ export default function BlogList() {
         <div style={styles.container}>
             <div style={styles.maxWidth}>
                 <div style={styles.header}>
-                    <h2 style={styles.title}>Latest Articles</h2>
+                    <h2 style={styles.title}>Latest Articles Part 1</h2>
                     <p style={styles.subtitle}>Insights, tutorials, and stories from our team</p>
                 </div>
 
