@@ -86,235 +86,132 @@ export default function BlogDetail() {
 
     const styles = {
         pageContainer: {
-            minHeight: '100vh',
-            background: '#FAFAFA',
-            padding: '20px 0',
+            minHeight: "100vh",
+            background: "#FAFAFA",
+            padding: "20px 0",
         },
         loadingContainer: {
-            minHeight: '100vh',
-            background: '#FAFAFA',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
         },
         spinner: {
-            width: '50px',
-            height: '50px',
-            border: '3px solid #DBDBDB',
-            borderTop: '3px solid #262626',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-            margin: '0 auto 20px',
+            width: "50px",
+            height: "50px",
+            border: "3px solid #DBDBDB",
+            borderTop: "3px solid #262626",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
         },
         container: {
-            maxWidth: '615px',
-            margin: '0 auto',
+            maxWidth: "615px",
+            margin: "0 auto",
         },
         backButton: {
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#262626',
-            fontSize: '14px',
-            fontWeight: '600',
-            textDecoration: 'none',
-            marginBottom: '20px',
-            cursor: 'pointer',
-            background: 'none',
-            border: 'none',
-            padding: '8px 0',
-            marginLeft: '20px',
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            marginBottom: "20px",
+            fontWeight: "600",
         },
         postCard: {
-            background: '#FFFFFF',
-            border: '1px solid #DBDBDB',
-            borderRadius: '8px',
-            marginBottom: '20px',
+            background: "#FFFFFF",
+            border: "1px solid #DBDBDB",
+            borderRadius: "8px",
         },
         postHeader: {
-            display: 'flex',
-            alignItems: 'center',
-            padding: '14px 16px',
-            borderBottom: '1px solid #EFEFEF',
+            display: "flex",
+            alignItems: "center",
+            padding: "14px 16px",
+            borderBottom: "1px solid #EFEFEF",
         },
         avatar: {
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: 'linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: '700',
-            fontSize: '14px',
-            marginRight: '12px',
-        },
-        username: {
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#262626',
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            background: "#262626",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: "12px",
+            fontWeight: "700",
         },
         postContent: {
-            padding: '16px',
+            padding: "16px",
         },
         title: {
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#262626',
-            marginBottom: '12px',
-            lineHeight: '1.4',
+            fontSize: "18px",
+            fontWeight: "600",
+            marginBottom: "12px",
         },
         content: {
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: '#262626',
+            fontSize: "14px",
+            lineHeight: "1.6",
         },
         actionsBar: {
-            padding: '6px 16px',
-            borderTop: '1px solid #EFEFEF',
-            borderBottom: '1px solid #EFEFEF',
-        },
-        actionButtons: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            padding: '8px 0',
+            padding: "8px 16px",
+            borderTop: "1px solid #EFEFEF",
+            borderBottom: "1px solid #EFEFEF",
         },
         actionButton: (active) => ({
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '24px',
-            transition: 'transform 0.2s ease',
-            color: active ? '#ED4956' : '#262626',
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "24px",
+            color: active ? "#ED4956" : "#262626",
         }),
         likesCount: {
-            padding: '8px 16px',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#262626',
+            padding: "8px 16px",
+            fontWeight: "600",
         },
         commentsSection: {
-            padding: '16px',
-            maxHeight: '400px',
-            overflowY: 'auto',
+            padding: "16px",
         },
         comment: {
-            marginBottom: '16px',
-            fontSize: '14px',
-            lineHeight: '1.5',
-            color: '#262626',
-        },
-        commentUsername: {
-            fontWeight: '600',
-            marginRight: '8px',
-        },
-        emptyComments: {
-            textAlign: 'center',
-            padding: '40px 20px',
-            color: '#8E8E8E',
-            fontSize: '14px',
+            marginBottom: "12px",
+            fontSize: "14px",
         },
         commentInputSection: {
-            padding: '16px',
-            borderTop: '1px solid #EFEFEF',
-        },
-        commentInputContainer: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
+            padding: "16px",
+            borderTop: "1px solid #EFEFEF",
         },
         commentInput: {
-            flex: 1,
-            border: 'none',
-            outline: 'none',
-            fontSize: '14px',
-            color: '#262626',
-            padding: '8px 0',
+            width: "100%",
+            border: "none",
+            outline: "none",
         },
-        postButton: (disabled) => ({
-            background: 'none',
-            border: 'none',
-            color: disabled ? '#B2DFFC' : '#0095F6',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            padding: '0',
-        }),
         likeAnimation: {
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: '100px',
-            animation: 'likePopup 0.6s ease-out',
-            pointerEvents: 'none',
-            zIndex: 1000,
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            fontSize: "100px",
         },
     };
 
     if (loading || !blog) {
         return (
             <div style={styles.loadingContainer}>
-                <style>{`
-                    @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                `}</style>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={styles.spinner}></div>
-                </div>
+                <div style={styles.spinner}></div>
             </div>
         );
     }
 
     return (
         <div style={styles.pageContainer}>
-            <style>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                    }
-                @keyframes likePopup {
-                    0% {
-                        transform: translate(-50%, -50%) scale(0);
-                        opacity: 0;
-                    }
-                    50% {
-                        transform: translate(-50%, -50%) scale(1.2);
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translate(-50%, -50%) scale(1);
-                        opacity: 0;
-                    }
-                }
-            `}</style>
-
-            {showLikeAnimation && (
-                <div style={styles.likeAnimation}>❤️</div>
-            )}
+            {showLikeAnimation && <div style={styles.likeAnimation}>❤️</div>}
 
             <div style={styles.container}>
-                <button
-                    style={styles.backButton}
-                    onClick={() => window.history.back()}
-                >
+                <button style={styles.backButton} onClick={() => window.history.back()}>
                     ← Back
                 </button>
 
                 <div style={styles.postCard}>
                     <div style={styles.postHeader}>
                         <div style={styles.avatar}>B</div>
-                        <div>
-                            <div style={styles.username}>Blog Author</div>
-                        </div>
+                        <strong>Blog Author</strong>
                     </div>
 
                     <div style={styles.postContent}>
@@ -323,71 +220,41 @@ export default function BlogDetail() {
                     </div>
 
                     <div style={styles.actionsBar}>
-                        <div style={styles.actionButtons}>
-                            <button
-                                style={styles.actionButton(isLiked)}
-                                onClick={onLike}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'scale(1.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }}
-                            >
-                                {isLiked ? '❤️' : '🤍'}
-                            </button>
-                            <button style={styles.actionButton(false)}>
-                                💬
-                            </button>
-                            <button style={styles.actionButton(false)}>
-                                📤
-                            </button>
-                        </div>
+                        <button
+                            style={styles.actionButton(isLiked)}
+                            onClick={onLike}
+                        >
+                            {isLiked ? "❤️" : "🤍"}
+                        </button>
                     </div>
 
                     {likes > 0 && (
                         <div style={styles.likesCount}>
-                            {likes} {likes === 1 ? 'like' : 'likes'}
+                            {likes} {likes === 1 ? "like" : "likes"}
                         </div>
                     )}
 
                     <div style={styles.commentsSection}>
-                        {comments.length === 0 ? (
-                            <div style={styles.emptyComments}>
-                                No comments yet
+                        {comments.map((c) => (
+                            <div key={c.id} style={styles.comment}>
+                                <strong>user</strong> {c.text}
                             </div>
-                        ) : (
-                            comments.map(c => (
-                                <div key={c.id} style={styles.comment}>
-                                    <span style={styles.commentUsername}>user</span>
-                                    {c.text}
-                                </div>
-                            ))
-                        )}
+                        ))}
                     </div>
 
                     <div style={styles.commentInputSection}>
-                        <div style={styles.commentInputContainer}>
-                            <input
-                                style={styles.commentInput}
-                                type="text"
-                                value={text}
-                                onChange={e => setText(e.target.value)}
-                                placeholder="Add a comment..."
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && !isSubmitting && text.trim()) {
-                                        onComment();
-                                    }
-                                }}
-                            />
-                            <button
-                                style={styles.postButton(isSubmitting || !text.trim())}
-                                onClick={onComment}
-                                disabled={isSubmitting || !text.trim()}
-                            >
-                                {isSubmitting ? 'Posting...' : 'Post'}
-                            </button>
-                        </div>
+                        <input
+                            style={styles.commentInput}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Add a comment..."
+                        />
+                        <button
+                            disabled={isSubmitting || !text.trim()}
+                            onClick={onComment}
+                        >
+                            Post
+                        </button>
                     </div>
                 </div>
             </div>
