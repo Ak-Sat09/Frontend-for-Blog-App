@@ -6,97 +6,192 @@ import { getComments, addComment } from "../api/commentApi";
 
 export default function BlogDetail() {
     const { id } = useParams();
+
     const [blog, setBlog] = useState(null);
     const [likes, setLikes] = useState(0);
-    const [comments, setComments] = useState([]);
-    const [text, setText] = useState("");
-    const [loading, setLoading] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [commentText, setCommentText] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [showShareBox, setShowShareBox] = useState(false);
 
-    const refreshLikes = useCallback(async () => {
-        const r = await getLikeCount(id);
-        setLikes(r.data.likes);
+    const shareUrl = `${window.location.origin}/share/blogs/${id}`;
+
+    const loadLikes = useCallback(async () => {
+        const res = await getLikeCount(id);
+        setLikes(res.data.likes);
     }, [id]);
 
     const loadComments = useCallback(async () => {
-        const r = await getComments(id);
-        setComments(r.data.comments.content);
+        const res = await getComments(id);
+        setComments(res.data.comments.content);
     }, [id]);
 
-    const fetchBlog = useCallback(async () => {
-        setLoading(true);
+    const loadBlog = useCallback(async () => {
         try {
             const res = await getBlogById(id);
             setBlog(res.data);
-            await refreshLikes();
+            await loadLikes();
             await loadComments();
         } finally {
             setLoading(false);
         }
-    }, [id, refreshLikes, loadComments]);
+    }, [id, loadLikes, loadComments]);
 
     useEffect(() => {
-        fetchBlog();
-    }, [fetchBlog]);
+        loadBlog();
+    }, [loadBlog]);
 
-    const onLike = async () => {
+    const handleLike = async () => {
         setIsLiked(!isLiked);
         await toggleLike(id);
-        refreshLikes();
+        loadLikes();
     };
 
-    const onShare = () => {
-        const shareUrl = `${window.location.origin}/share/blogs/${id}`;
+    const copyLink = () => {
         navigator.clipboard.writeText(shareUrl);
-        alert("Share link copied");
+        alert("Link copied");
     };
 
-    const onComment = async () => {
-        if (!text.trim()) return;
-        await addComment(id, text);
-        setText("");
-        loadComments();
-    };
-
-    if (loading || !blog) return <div>Loading...</div>;
+    if (loading) return <div>Loading...</div>;
 
     return (
-        <div style={{ maxWidth: "600px", margin: "20px auto" }}>
-            <h2>{blog.title}</h2>
-            <p>{blog.content}</p>
+        <div style={styles.page}>
+            <div style={styles.card}>
+                <h2>{blog.title}</h2>
+                <p>{blog.content}</p>
 
-            {/* ACTION BAR */}
-            <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
-                <button onClick={onLike}>
-                    {isLiked ? "Liked" : "Like"}
-                </button>
+                {/* ACTIONS */}
+                <div style={styles.actions}>
+                    <button onClick={handleLike} style={styles.button}>
+                        {isLiked ? "Liked" : "Like"}
+                    </button>
 
-                <button onClick={onShare}>
-                    Share
-                </button>
-            </div>
+                    <button
+                        onClick={() => setShowShareBox(!showShareBox)}
+                        style={styles.button}
+                    >
+                        Share
+                    </button>
+                </div>
 
-            <div style={{ marginTop: "8px", fontWeight: "600" }}>
-                {likes} likes
-            </div>
+                <div style={styles.likes}>{likes} likes</div>
 
-            {/* COMMENTS */}
-            <div style={{ marginTop: "20px" }}>
-                {comments.map(c => (
-                    <div key={c.id}>
-                        <b>User:</b> {c.text}
+                {/* SHARE BOX */}
+                {showShareBox && (
+                    <div style={styles.shareBox}>
+                        <p><b>Share this blog</b></p>
+
+                        <input
+                            value={shareUrl}
+                            readOnly
+                            style={styles.shareInput}
+                        />
+
+                        <div style={styles.shareActions}>
+                            <button onClick={copyLink} style={styles.button}>
+                                Copy URL
+                            </button>
+
+                            <a
+                                href={`https://wa.me/?text=${encodeURIComponent(shareUrl)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                WhatsApp
+                            </a>
+
+                            <a
+                                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Twitter
+                            </a>
+                        </div>
+
+                        <button
+                            onClick={() => setShowShareBox(false)}
+                            style={{ marginTop: "10px" }}
+                        >
+                            Close
+                        </button>
                     </div>
-                ))}
-            </div>
+                )}
 
-            <div style={{ marginTop: "12px" }}>
-                <input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Add comment"
-                />
-                <button onClick={onComment}>Post</button>
+                {/* COMMENTS */}
+                <div style={{ marginTop: "20px" }}>
+                    {comments.map(c => (
+                        <div key={c.id}>
+                            <b>User:</b> {c.text}
+                        </div>
+                    ))}
+                </div>
+
+                {/* ADD COMMENT */}
+                <div style={styles.addComment}>
+                    <input
+                        value={commentText}
+                        onChange={e => setCommentText(e.target.value)}
+                        placeholder="Write a comment"
+                        style={styles.input}
+                    />
+                    <button style={styles.button}>Post</button>
+                </div>
             </div>
         </div>
     );
 }
+
+/* STYLES */
+const styles = {
+    page: {
+        display: "flex",
+        justifyContent: "center",
+        marginTop: "30px"
+    },
+    card: {
+        width: "600px",
+        border: "1px solid #ddd",
+        padding: "20px",
+        borderRadius: "6px"
+    },
+    actions: {
+        display: "flex",
+        gap: "12px"
+    },
+    button: {
+        padding: "6px 12px",
+        cursor: "pointer"
+    },
+    likes: {
+        marginTop: "8px",
+        fontWeight: "600"
+    },
+    shareBox: {
+        marginTop: "15px",
+        padding: "12px",
+        border: "1px solid #ccc",
+        borderRadius: "6px",
+        background: "#f9f9f9"
+    },
+    shareInput: {
+        width: "100%",
+        padding: "6px",
+        marginTop: "6px"
+    },
+    shareActions: {
+        display: "flex",
+        gap: "12px",
+        marginTop: "10px"
+    },
+    addComment: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "15px"
+    },
+    input: {
+        flex: 1,
+        padding: "6px"
+    }
+};
