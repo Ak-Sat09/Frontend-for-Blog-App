@@ -1,273 +1,238 @@
 import { useEffect, useState } from "react";
-import { getAllBlogs } from "../api/blogApi";
 import { Link } from "react-router-dom";
+import { getAllBlogs } from "../api/blogApi";
+import "./styles.css";
 
 export default function BlogList() {
-    const [blogs, setBlogs] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [hoveredId, setHoveredId] = useState(null);
+  const [blogs, setBlogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
 
-    useEffect(() => {
-        const fetchBlogs = async () => {
-            try {
-                setIsLoading(true);
-                const response = await getAllBlogs();
-                setBlogs(response.data);
-                setError(null);
-            } catch (err) {
-                setError(err.message || "Failed to fetch blogs");
-                console.error("Error fetching blogs:", err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchBlogs();
-    }, []);
-
-    const styles = {
-        container: {
-            minHeight: '100vh',
-            background: '#FFFFFF',
-            padding: '60px 5%',
-        },
-        loadingContainer: {
-            minHeight: '100vh',
-            background: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        spinner: {
-            width: '50px',
-            height: '50px',
-            border: '3px solid #F1F5F9',
-            borderTop: '3px solid #3B82F6',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-            margin: '0 auto 20px',
-        },
-        loadingText: {
-            color: '#64748B',
-            fontSize: '15px',
-            fontWeight: '500',
-        },
-        errorContainer: {
-            minHeight: '100vh',
-            background: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-        },
-        errorBox: {
-            background: '#FEF2F2',
-            border: '1px solid #FEE2E2',
-            padding: '24px 32px',
-            borderRadius: '8px',
-            maxWidth: '500px',
-        },
-        errorText: {
-            color: '#DC2626',
-            fontSize: '15px',
-            fontWeight: '500',
-        },
-        maxWidth: {
-            maxWidth: '1200px',
-            margin: '0 auto',
-        },
-        header: {
-            marginBottom: '48px',
-            borderBottom: '1px solid #E2E8F0',
-            paddingBottom: '24px',
-        },
-        title: {
-            fontSize: '36px',
-            fontWeight: '700',
-            color: '#0F172A',
-            marginBottom: '8px',
-            letterSpacing: '-0.5px',
-        },
-        subtitle: {
-            color: '#64748B',
-            fontSize: '16px',
-            fontWeight: '400',
-        },
-        grid: {
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-            gap: '32px',
-        },
-        card: (isHovered) => ({
-            background: '#FFFFFF',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-            boxShadow: isHovered
-                ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            border: '1px solid #E2E8F0',
-            cursor: 'pointer',
-        }),
-        cardContent: {
-            padding: '24px',
-        },
-        cardMeta: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '16px',
-        },
-        category: {
-            background: '#EFF6FF',
-            color: '#3B82F6',
-            padding: '4px 12px',
-            borderRadius: '16px',
-            fontSize: '12px',
-            fontWeight: '600',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-        },
-        date: {
-            color: '#94A3B8',
-            fontSize: '13px',
-            fontWeight: '500',
-        },
-        cardTitle: {
-            fontSize: '20px',
-            fontWeight: '600',
-            color: '#1E293B',
-            marginBottom: '12px',
-            lineHeight: '1.5',
-        },
-        excerpt: {
-            color: '#64748B',
-            fontSize: '15px',
-            lineHeight: '1.6',
-            marginBottom: '20px',
-        },
-        buttonContainer: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: '16px',
-            borderTop: '1px solid #F1F5F9',
-        },
-        button: (isHovered) => ({
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '6px',
-            fontSize: '14px',
-            fontWeight: '600',
-            textDecoration: 'none',
-            transition: 'all 0.2s ease',
-            background: isHovered ? '#3B82F6' : '#FFFFFF',
-            color: isHovered ? '#FFFFFF' : '#3B82F6',
-            border: `2px solid ${isHovered ? '#3B82F6' : '#3B82F6'}`,
-            cursor: 'pointer',
-        }),
-        arrow: (isHovered) => ({
-            transition: 'transform 0.2s ease',
-            transform: isHovered ? 'translateX(4px)' : 'translateX(0)',
-            fontSize: '14px',
-        }),
-        readTime: {
-            color: '#94A3B8',
-            fontSize: '13px',
-            fontWeight: '500',
-        },
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getAllBlogs();
+        setBlogs(response.data);
+        setError(null);
+      } catch (err) {
+        setError(err.message || "Failed to fetch blogs");
+        console.error("Error fetching blogs:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    if (isLoading) {
-        return (
-            <div style={styles.loadingContainer}>
-                <style>{`
-                    @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                `}</style>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={styles.spinner}></div>
-                    <p style={styles.loadingText}>Loading articles...</p>
-                </div>
-            </div>
-        );
-    }
+    fetchBlogs();
+  }, []);
 
-    if (error) {
-        return (
-            <div style={styles.errorContainer}>
-                <div style={styles.errorBox}>
-                    <p style={styles.errorText}>{error}</p>
-                </div>
-            </div>
-        );
-    }
+  /**
+   * Calculate reading time based on content length
+   */
+  const calculateReadTime = (content) => {
+    if (!content) return "5 min read";
+    const wordsPerMinute = 200;
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
+  };
 
-    if (blogs.length === 0) {
-        return (
-            <div style={styles.loadingContainer}>
-                <div style={{ textAlign: 'center' }}>
-                    <p style={{ ...styles.loadingText, fontSize: '16px' }}>No articles available</p>
-                </div>
-            </div>
-        );
-    }
+  /**
+   * Truncate content for excerpt
+   */
+  const getExcerpt = (content, maxLength = 150) => {
+    if (!content) return "Discover insights and learn best practices from industry experts.";
+    const text = content.trim();
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + "...";
+  };
 
+  /**
+   * Format date
+   */
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      const date = new Date();
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  if (isLoading) {
     return (
-        <div style={styles.container}>
-            <div style={styles.maxWidth}>
-                <div style={styles.header}>
-                    <h2 style={styles.title}>Latest Articles Part 1</h2>
-                    <p style={styles.subtitle}>Insights, tutorials, and stories from our team</p>
-                </div>
-
-                <div style={styles.grid}>
-                    {blogs.map((blog, index) => {
-                        const isHovered = hoveredId === blog.id;
-
-                        return (
-                            <article
-                                key={blog.id}
-                                style={styles.card(isHovered)}
-                                onMouseEnter={() => setHoveredId(blog.id)}
-                                onMouseLeave={() => setHoveredId(null)}
-                            >
-                                <div style={styles.cardContent}>
-                                    <div style={styles.cardMeta}>
-                                        <span style={styles.category}>Article</span>
-                                        <span style={styles.date}>5 min read</span>
-                                    </div>
-
-                                    <h3 style={styles.cardTitle}>
-                                        {blog.title}
-                                    </h3>
-
-                                    <p style={styles.excerpt}>
-                                        Discover insights and learn best practices from industry experts.
-                                    </p>
-
-                                    <div style={styles.buttonContainer}>
-                                        <Link
-                                            to={`/blogs/${blog.id}`}
-                                            style={styles.button(isHovered)}
-                                        >
-                                            <span>Read More</span>
-                                            <span style={styles.arrow(isHovered)}>→</span>
-                                        </Link>
-                                        <span style={styles.readTime}>Jan {15 + index}, 2025</span>
-                                    </div>
-                                </div>
-                            </article>
-                        );
-                    })}
-                </div>
-            </div>
+      <div className="blog-list-page">
+        <div className="loading-state">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">Curating your stories...</p>
+          </div>
         </div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="blog-list-page">
+        <div className="error-state">
+          <div className="error-content">
+            <div className="error-icon">⚠</div>
+            <h3 className="error-title">Unable to Load Stories</h3>
+            <p className="error-message">{error}</p>
+            <button 
+              className="retry-button"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (blogs.length === 0) {
+    return (
+      <div className="blog-list-page">
+        <div className="empty-state">
+          <div className="empty-content">
+            <div className="empty-icon">📚</div>
+            <h3 className="empty-title">No Stories Yet</h3>
+            <p className="empty-message">Be the first to share your story with the community.</p>
+            <Link to="/create" className="create-first-button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Write Your First Story
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="blog-list-page">
+      {/* Hero Section */}
+      <div className="blog-hero">
+        <div className="hero-content">
+          <div className="hero-badge">
+            <span className="badge-dot"></span>
+            <span className="badge-text">Latest Stories</span>
+          </div>
+          <h1 className="hero-title">
+            Discover Stories That
+            <span className="hero-title-accent"> Inspire</span>
+          </h1>
+          <p className="hero-subtitle">
+            Explore thought-provoking articles, personal journeys, and creative narratives from our community of writers.
+          </p>
+          <div className="hero-stats">
+            <div className="stat-item">
+              <span className="stat-number">{blogs.length}</span>
+              <span className="stat-label">Stories</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item">
+              <span className="stat-number">∞</span>
+              <span className="stat-label">Possibilities</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Blog Grid */}
+      <div className="blog-container">
+        <div className="blog-grid">
+          {blogs.map((blog, index) => {
+            const isHovered = hoveredId === blog.id;
+            const readTime = calculateReadTime(blog.content);
+            const excerpt = getExcerpt(blog.content);
+            const publishDate = formatDate(blog.createdAt || blog.publishedAt);
+
+            return (
+              <article
+                key={blog.id}
+                className={`blog-card ${isHovered ? "blog-card--hovered" : ""}`}
+                onMouseEnter={() => setHoveredId(blog.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                {/* Card Header */}
+                <div className="card-header">
+                  <div className="card-meta">
+                    <span className="card-category">Story</span>
+                    <span className="card-read-time">{readTime}</span>
+                  </div>
+                  <div className="card-bookmark">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="card-body">
+                  <h3 className="card-title">
+                    <Link to={`/blogs/${blog.id}`} className="card-title-link">
+                      {blog.title}
+                    </Link>
+                  </h3>
+                  <p className="card-excerpt">{excerpt}</p>
+                </div>
+
+                {/* Card Footer */}
+                <div className="card-footer">
+                  <div className="card-author">
+                    <div className="author-avatar">
+                      {blog.author?.name?.charAt(0).toUpperCase() || blog.title?.charAt(0).toUpperCase() || "A"}
+                    </div>
+                    <div className="author-info">
+                      <span className="author-name">{blog.author?.name || "Anonymous"}</span>
+                      <span className="publish-date">{publishDate}</span>
+                    </div>
+                  </div>
+                  <Link 
+                    to={`/blogs/${blog.id}`} 
+                    className="read-more-link"
+                    aria-label={`Read ${blog.title}`}
+                  >
+                    <span>Read</span>
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                      className="arrow-icon"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {/* Load More Section */}
+        <div className="load-more-section">
+          <div className="load-more-divider"></div>
+          <p className="load-more-text">You've reached the end of the stories</p>
+          <Link to="/create" className="write-story-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Write Your Story
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
