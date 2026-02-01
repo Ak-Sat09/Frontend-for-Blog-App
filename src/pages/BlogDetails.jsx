@@ -43,9 +43,17 @@ export default function BlogDetail() {
     }, [loadBlog]);
 
     const handleLike = async () => {
-        setIsLiked(!isLiked);
+        setIsLiked(prev => !prev);
         await toggleLike(id);
         loadLikes();
+    };
+
+    const handleAddComment = async () => {
+        if (!commentText.trim()) return;
+
+        await addComment(id, { text: commentText });
+        setCommentText("");
+        loadComments();
     };
 
     const copyLink = () => {
@@ -54,6 +62,7 @@ export default function BlogDetail() {
     };
 
     if (loading) return <div>Loading...</div>;
+    if (!blog) return <div>Blog not found</div>;
 
     return (
         <div style={styles.page}>
@@ -121,8 +130,10 @@ export default function BlogDetail() {
 
                 {/* COMMENTS */}
                 <div style={{ marginTop: "20px" }}>
+                    <h4>Comments</h4>
+                    {comments.length === 0 && <p>No comments yet</p>}
                     {comments.map(c => (
-                        <div key={c.id}>
+                        <div key={c.id} style={{ marginBottom: "6px" }}>
                             <b>User:</b> {c.text}
                         </div>
                     ))}
@@ -136,7 +147,9 @@ export default function BlogDetail() {
                         placeholder="Write a comment"
                         style={styles.input}
                     />
-                    <button style={styles.button}>Post</button>
+                    <button onClick={handleAddComment} style={styles.button}>
+                        Post
+                    </button>
                 </div>
             </div>
         </div>
