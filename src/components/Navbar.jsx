@@ -10,10 +10,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -24,22 +21,18 @@ export default function Navbar() {
     window.location.reload();
   };
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  const isActive = (path) => location.pathname === path;
 
-  const navLinks = isAuthenticated()
-    ? [
-        { path: "/blogs", label: "Stories", icon: "📚" },
-        { path: "/create", label: "Write", icon: "✍️" },
-      ]
-    : [];
+  const authLinks = [
+    { path: "/blogs", label: "Stories", icon: "📚" },
+    { path: "/create", label: "Write", icon: "✍️" },
+  ];
 
   return (
     <nav className={`modern-navbar ${scrolled ? "scrolled" : ""}`}>
       <div className="navbar-container">
-        {/* Logo Section */}
-        <Link to={isAuthenticated() ? "/blogs" : "/login"} className="navbar-logo">
+        {/* Logo */}
+        <Link to="/blogs" className="navbar-logo">
           <div className="logo-icon">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -55,111 +48,81 @@ export default function Navbar() {
               />
             </svg>
           </div>
-          <span className="logo-text">
-            Chronicle<span className="logo-accent">.</span>
-          </span>
+          <span className="logo-text">Chronicle<span className="logo-accent">.</span></span>
         </Link>
 
         {/* Desktop Navigation */}
-        {isAuthenticated() && (
-          <>
-            <div className="navbar-links">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`nav-link ${isActive(link.path) ? "active" : ""}`}
-                >
-                  <span className="nav-icon">{link.icon}</span>
-                  <span className="nav-label">{link.label}</span>
-                  {isActive(link.path) && <span className="active-indicator" />}
-                </Link>
-              ))}
-            </div>
+        <div className="navbar-links">
+          {/* Public Stories button */}
+          <Link
+            to="/blogs"
+            className={`nav-link ${isActive("/blogs") ? "active" : ""}`}
+          >
+            <span className="nav-icon">📚</span>
+            <span className="nav-label">Stories</span>
+            {isActive("/blogs") && <span className="active-indicator" />}
+          </Link>
 
-            {/* User Actions */}
-            <div className="navbar-actions">
-              <button className="action-btn search-btn" aria-label="Search">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle
-                    cx="9"
-                    cy="9"
-                    r="6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M13.5 13.5L17 17"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-
-              <button
-                className="action-btn logout-btn"
-                onClick={handleLogout}
-                aria-label="Logout"
+          {/* Auth Links */}
+          {isAuthenticated() &&
+            authLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`nav-link ${isActive(link.path) ? "active" : ""}`}
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M13 14L17 10L13 6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M17 10H7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M7 3H5C3.89543 3 3 3.89543 3 5V15C3 16.1046 3.89543 17 5 17H7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span className="logout-text">Exit</span>
-              </button>
+                <span className="nav-icon">{link.icon}</span>
+                <span className="nav-label">{link.label}</span>
+                {isActive(link.path) && <span className="active-indicator" />}
+              </Link>
+            ))}
+        </div>
 
-              {/* Mobile Menu Toggle */}
-              <button
-                className="mobile-menu-toggle"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                <span className={`hamburger ${mobileMenuOpen ? "open" : ""}`}>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </span>
-              </button>
-            </div>
-          </>
-        )}
+        {/* Actions */}
+        <div className="navbar-actions">
+          {!isAuthenticated() && (
+            <>
+              <Link to="/login" className="action-btn">Login</Link>
+              <Link to="/register" className="action-btn">Register</Link>
+            </>
+          )}
+
+          {isAuthenticated() && (
+            <button className="action-btn logout-btn" onClick={handleLogout}>
+              Exit
+            </button>
+          )}
+
+          {/* Mobile Toggle */}
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span className={`hamburger ${mobileMenuOpen ? "open" : ""}`}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
-      {isAuthenticated() && (
-        <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}>
-          <div className="mobile-menu-content">
-            {navLinks.map((link) => (
+      <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}>
+        <div className="mobile-menu-content">
+          {/* Public Stories */}
+          <Link
+            to="/blogs"
+            className={`mobile-nav-link ${isActive("/blogs") ? "active" : ""}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <span className="nav-icon">📚</span>
+            <span className="nav-label">Stories</span>
+          </Link>
+
+          {/* Auth Links */}
+          {isAuthenticated() &&
+            authLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -170,40 +133,18 @@ export default function Navbar() {
                 <span className="nav-label">{link.label}</span>
               </Link>
             ))}
-            <div className="mobile-divider" />
-            <button className="mobile-logout" onClick={handleLogout}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M13 14L17 10L13 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M17 10H7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M7 3H5C3.89543 3 3 3.89543 3 5V15C3 16.1046 3.89543 17 5 17H7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span>Sign Out</span>
-            </button>
-          </div>
+
+          {/* Auth Buttons */}
+          {!isAuthenticated() ? (
+            <>
+              <Link to="/login" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+              <Link to="/register" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>Register</Link>
+            </>
+          ) : (
+            <button className="mobile-logout" onClick={handleLogout}>Sign Out</button>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

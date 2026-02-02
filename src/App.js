@@ -19,37 +19,30 @@ function App() {
 
       <Routes>
         {/* Default */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/blogs" />} />
 
         {/* Auth Routes */}
         <Route
           path="/login"
           element={isAuthenticated() ? <Navigate to="/blogs" /> : <Login />}
         />
-
         <Route
           path="/register"
           element={isAuthenticated() ? <Navigate to="/blogs" /> : <Register />}
         />
 
-        {/* Protected Routes */}
-        <Route
-          path="/blogs"
-          element={isAuthenticated() ? <BlogList /> : <Navigate to="/login" />}
-        />
+        {/* Public Blog Routes */}
+        <Route path="/blogs" element={<BlogList />} />
+        <Route path="/blogs/:id" element={<BlogDetail />} />
 
-        <Route
-          path="/blogs/:id"
-          element={isAuthenticated() ? <BlogDetail /> : <Navigate to="/login" />}
-        />
-
+        {/* Protected Route */}
         <Route
           path="/create"
           element={isAuthenticated() ? <CreateBlog /> : <Navigate to="/login" />}
         />
 
-       <Route path="/portfolio" element={<Portfolio />} />
-
+        {/* Portfolio */}
+        <Route path="/portfolio" element={<Portfolio />} />
 
         {/* 404 */}
         <Route path="*" element={<h2>404 - Page Not Found</h2>} />
