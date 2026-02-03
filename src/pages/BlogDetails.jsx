@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams,  Link } from "react-router-dom";
 import { getBlogById } from "../api/blogApi";
 import { toggleLike, getLikeCount } from "../api/likeApi";
 import { getComments, addComment } from "../api/commentApi";
@@ -7,7 +7,7 @@ import "./styles.css";
 
 export default function BlogDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  
 
   const [blog, setBlog] = useState(null);
   const [likes, setLikes] = useState(0);
