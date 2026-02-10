@@ -53,29 +53,29 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="navbar-links">
-          {/* Public Stories button */}
-          <Link
-            to="/blogs"
-            className={`nav-link ${isActive("/blogs") ? "active" : ""}`}
-          >
-            <span className="nav-icon">📚</span>
-            <span className="nav-label">Stories</span>
-            {isActive("/blogs") && <span className="active-indicator" />}
-          </Link>
-
-          {/* Auth Links */}
-          {isAuthenticated() &&
-            authLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`nav-link ${isActive(link.path) ? "active" : ""}`}
-              >
-                <span className="nav-icon">{link.icon}</span>
-                <span className="nav-label">{link.label}</span>
-                {isActive(link.path) && <span className="active-indicator" />}
-              </Link>
-            ))}
+          {isAuthenticated() 
+            ? authLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`nav-link ${isActive(link.path) ? "active" : ""}`}
+                >
+                  <span className="nav-icon">{link.icon}</span>
+                  <span className="nav-label">{link.label}</span>
+                  {isActive(link.path) && <span className="active-indicator" />}
+                </Link>
+              ))
+            : (
+                <Link
+                  to="/blogs"
+                  className={`nav-link ${isActive("/blogs") ? "active" : ""}`}
+                >
+                  <span className="nav-icon">📚</span>
+                  <span className="nav-label">Stories</span>
+                  {isActive("/blogs") && <span className="active-indicator" />}
+                </Link>
+              )
+          }
         </div>
 
         {/* Actions */}
@@ -110,29 +110,29 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <div className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}>
         <div className="mobile-menu-content">
-          {/* Public Stories */}
-          <Link
-            to="/blogs"
-            className={`mobile-nav-link ${isActive("/blogs") ? "active" : ""}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <span className="nav-icon">📚</span>
-            <span className="nav-label">Stories</span>
-          </Link>
-
-          {/* Auth Links */}
-          {isAuthenticated() &&
-            authLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`mobile-nav-link ${isActive(link.path) ? "active" : ""}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span className="nav-icon">{link.icon}</span>
-                <span className="nav-label">{link.label}</span>
-              </Link>
-            ))}
+          {isAuthenticated() 
+            ? authLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`mobile-nav-link ${isActive(link.path) ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="nav-icon">{link.icon}</span>
+                  <span className="nav-label">{link.label}</span>
+                </Link>
+              ))
+            : (
+                <Link
+                  to="/blogs"
+                  className={`mobile-nav-link ${isActive("/blogs") ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="nav-icon">📚</span>
+                  <span className="nav-label">Stories</span>
+                </Link>
+              )
+          }
 
           {/* Auth Buttons */}
           {!isAuthenticated() ? (
