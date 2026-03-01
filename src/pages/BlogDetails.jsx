@@ -256,20 +256,7 @@ export default function BlogDetail() {
             </>
           )}
 
-          {/* Author Row */}
-          <div className="article-author">
-            <div className="author-avatar">
-              {blog.author?.name?.charAt(0).toUpperCase() ||
-                blog.title?.charAt(0).toUpperCase() ||
-                "A"}
-            </div>
-            <div className="author-details">
-              <div className="author-name">
-                {blog.author?.name || "Anonymous"}
-              </div>
-              <div className="author-meta">{publishDate}</div>
-            </div>
-          </div>
+          
         </header>
 
         {/* ── CONTENT ── */}

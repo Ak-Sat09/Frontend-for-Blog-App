@@ -48,17 +48,7 @@ export default function BlogList() {
     return text.substring(0, maxLength).trim() + "...";
   };
 
-  /**
-   * Format date
-   */
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      const date = new Date();
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+  
 
   if (isLoading) {
     return (
@@ -151,8 +141,7 @@ export default function BlogList() {
             const isHovered = hoveredId === blog.id;
             const readTime = calculateReadTime(blog.content);
             const excerpt = getExcerpt(blog.content);
-            const publishDate = formatDate(blog.createdAt || blog.publishedAt);
-
+            
             return (
               <article
                 key={blog.id}
@@ -187,13 +176,8 @@ export default function BlogList() {
                 {/* Card Footer */}
                 <div className="card-footer">
                   <div className="card-author">
-                    <div className="author-avatar">
-                      {blog.author?.name?.charAt(0).toUpperCase() || blog.title?.charAt(0).toUpperCase() || "A"}
-                    </div>
-                    <div className="author-info">
-                      <span className="author-name">{blog.author?.name || "Anonymous"}</span>
-                      <span className="publish-date">{publishDate}</span>
-                    </div>
+                    
+                    
                   </div>
                   <Link 
                     to={`/blogs/${blog.id}`} 
