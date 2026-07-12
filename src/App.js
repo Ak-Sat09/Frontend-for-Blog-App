@@ -12,6 +12,8 @@ import CreateBlog from "./pages/CreateBlog";
 import { isAuthenticated } from "./utils/auth";
 import Portfolio from "./portfolio/Portfolio";
 
+import Email from "./Email/Main.jsx";
+
 function App() {
   return (
     <>
@@ -43,6 +45,9 @@ function App() {
 
         {/* Portfolio */}
         <Route path="/portfolio" element={<Portfolio />} />
+
+        <Route path="/email" element={<Email/>} />
+
 
         {/* 404 */}
         <Route path="*" element={<h2>404 - Page Not Found</h2>} />
