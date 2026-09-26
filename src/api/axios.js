@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "https://demo-cicd-latest-zq0o.onrender.com",
+    baseURL: "https://chronicle-blog-platform-1.onrender.com",
 });
 
 api.interceptors.request.use((config) => {
