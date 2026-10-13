@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://56.228.35.2:8080",
+    baseURL: "https://flash-remark-src-presently.trycloudflare.com",
 });
 
 api.interceptors.request.use((config) => {
