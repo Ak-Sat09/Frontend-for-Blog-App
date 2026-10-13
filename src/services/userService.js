@@ -1,4 +1,4 @@
-const BASE_URL = "http://56.228.35.2:8080/api/users";
+const BASE_URL = "https://flash-remark-src-presently.trycloudflare.com/api/users";
 
 export const registerUser = async (user) => {
   const response = await fetch(`${BASE_URL}/register`, {
