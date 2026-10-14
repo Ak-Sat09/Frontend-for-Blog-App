@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "https://flash-remark-src-presently.trycloudflare.com",
+    baseURL: "https://chronicle-blogs.duckdns.org",
 });
 
 api.interceptors.request.use((config) => {
