@@ -5,7 +5,7 @@ import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import "./styles.css";
 
-const BASE_URL = "https://demo-cicd-latest-6p2b.onrender.com";
+const BASE_URL = "https://chronicle-blogs.duckdns.org";
 
 export default function BlogDetail() {
   const { id } = useParams();
