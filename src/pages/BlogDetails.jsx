@@ -12,6 +12,274 @@ const MAX_COMMENT_LENGTH = 500;
 const NOTICE_DURATION_MS = 3000;
 
 /* =====================================================================
+   Scoped styles for the social section (kept in this file on purpose)
+   ===================================================================== */
+
+const SOCIAL_CSS = `
+.social {
+  --s-ink: #1f1d1a;
+  --s-muted: #6b665f;
+  --s-line: #e6e2db;
+  --s-surface: #faf9f7;
+  --s-accent: #1f5f5b;       
+  --s-like: #c8372d;         
+  --s-error-bg: #fdecea;
+  --s-error-ink: #8a1f17;
+
+  max-width: 680px;
+  margin: 3rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--s-line);
+  color: var(--s-ink);
+}
+
+.social .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.social .social-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.social .social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--s-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--s-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.social .social-btn:hover {
+  border-color: var(--s-ink);
+}
+
+.social .social-btn:focus-visible,
+.social .comment-submit:focus-visible,
+.social .comment-form textarea:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 2px;
+}
+
+.social .social-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.social .social-btn--like.is-active {
+  color: var(--s-like);
+  border-color: var(--s-like);
+  background: #fff6f5;
+}
+
+.social .social-btn--like.is-active svg {
+  animation: heart-pop 0.28s ease-out;
+}
+
+.social .social-btn--share {
+  margin-left: auto;
+}
+
+.social .social-btn--share.is-active {
+  color: var(--s-accent);
+  border-color: var(--s-accent);
+}
+
+@keyframes heart-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.social .social-notice-slot {
+  min-height: 2.6rem;
+  margin-top: 0.75rem;
+}
+
+.social .social-notice {
+  margin: 0;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.social .social-notice--error {
+  background: var(--s-error-bg);
+  color: var(--s-error-ink);
+}
+
+.social .social-notice--info {
+  background: var(--s-surface);
+  color: var(--s-muted);
+}
+
+.social .comments {
+  margin-top: 0.5rem;
+  scroll-margin-top: 1rem;
+}
+
+.social .comments-title {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.social .comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+
+.social .comment-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--s-line);
+  border-radius: 10px;
+  background: var(--s-surface);
+  color: var(--s-ink);
+  font: inherit;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+.social .comment-form textarea:focus {
+  background: #fff;
+  border-color: var(--s-accent);
+}
+
+.social .comment-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.social .comment-hint {
+  font-size: 0.8rem;
+  color: var(--s-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.social .comment-submit {
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--s-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.social .comment-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.social .comments-empty {
+  padding: 1.5rem 0;
+  color: var(--s-muted);
+  text-align: center;
+}
+
+.social .comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.social .comment {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--s-line);
+}
+
+.social .comment:first-child {
+  border-top: 0;
+}
+
+.social .comment-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #e5efed;
+  color: var(--s-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.social .comment-main {
+  min-width: 0;
+}
+
+.social .comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.2rem;
+}
+
+.social .comment-author {
+  font-weight: 600;
+  font-size: 0.93rem;
+}
+
+.social .comment-time {
+  font-size: 0.8rem;
+  color: var(--s-muted);
+}
+
+.social .comment-body {
+  margin: 0;
+  font-size: 0.97rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .social .comment-hint-keys {
+    display: none;
+  }
+  .social .social-btn {
+    padding: 0.55rem 0.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social .social-btn--like.is-active svg {
+    animation: none;
+  }
+}
+`;
+
+/* =====================================================================
    Pure helpers
    ===================================================================== */
 
@@ -245,6 +513,7 @@ function SocialSection({ blogId, title }) {
 
   return (
     <section className="social" aria-label="Reactions and comments">
+      <style>{SOCIAL_CSS}</style>
       <div className="social-bar">
         <button
           type="button"
@@ -489,8 +758,12 @@ export default function BlogDetail() {
             <span className="article-category">Story</span>
             <span className="meta-divider">•</span>
             <span className="article-read-time">{readTime}</span>
-            <span className="meta-divider">•</span>
-            <span className="article-date">{publishDate}</span>
+            {publishDate && (
+              <>
+                <span className="meta-divider">•</span>
+                <span className="article-date">{publishDate}</span>
+              </>
+            )}
             <span className="meta-divider">•</span>
 
             {isConnected ? (
