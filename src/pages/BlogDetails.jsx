@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getBlogById } from "../api/blogApi";
+import { getComments, addComment } from "../api/commentApi";
+import { toggleLike, getLikeCount } from "../api/likeApi";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import "./styles.css";
@@ -18,6 +20,12 @@ export default function BlogDetail() {
   const [isConnected, setIsConnected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [flashUpdate, setFlashUpdate] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isPostingComment, setIsPostingComment] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
@@ -108,6 +116,78 @@ export default function BlogDetail() {
   };
 
   // -----------------------------------
+  // Like / Comments / Share
+  // -----------------------------------
+  const loadComments = useCallback(async () => {
+    try {
+      const res = await getComments(id);
+      setComments(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading comments:", err);
+    }
+  }, [id]);
+
+  const loadLikeCount = useCallback(async () => {
+    try {
+      const res = await getLikeCount(id);
+      const value = typeof res.data === "number" ? res.data : (res.data?.count ?? 0);
+      setLikeCount(value);
+    } catch (err) {
+      console.error("Error loading like count:", err);
+    }
+  }, [id]);
+
+  const handleLike = async () => {
+    try {
+      setIsLiking(true);
+      await toggleLike(id);
+      await loadLikeCount();
+    } catch (err) {
+      console.error("Error toggling like:", err);
+      alert("Please login to like this story.");
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+
+    try {
+      setIsPostingComment(true);
+      await addComment(id, { content: commentText.trim() });
+      setCommentText("");
+      await loadComments();
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      alert("Please login to comment.");
+    } finally {
+      setIsPostingComment(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: blog?.title || "Story",
+          url: shareUrl,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Error sharing story:", err);
+    }
+  };
+
+  // -----------------------------------
   // Cleanup
   // -----------------------------------
   const disconnectSocket = () => {
@@ -124,11 +204,13 @@ export default function BlogDetail() {
   // -----------------------------------
   useEffect(() => {
     loadBlog();
+    loadComments();
+    loadLikeCount();
     connectSocket();
     return () => {
       disconnectSocket();
     };
-  }, [id, loadBlog, connectSocket]);
+  }, [id, loadBlog, loadComments, loadLikeCount, connectSocket]);
 
   // -----------------------------------
   // Helpers
@@ -287,6 +369,57 @@ export default function BlogDetail() {
             </div>
           )}
         </div>
+
+        {/* ── SOCIAL ACTIONS ── */}
+        <section className="article-social-section">
+          <div className="article-social-actions">
+            <button className="btn-like" onClick={handleLike} disabled={isLiking}>
+              ♥ {isLiking ? "..." : likeCount} {likeCount === 1 ? "Like" : "Likes"}
+            </button>
+
+            <button className="btn-share" onClick={handleShare}>
+              {copied ? "✓ Link Copied" : "↗ Share"}
+            </button>
+          </div>
+
+          <div className="comments-section">
+            <h3>Comments ({comments.length})</h3>
+
+            <form className="comment-form" onSubmit={handleAddComment}>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                rows="3"
+              />
+              <button
+                type="submit"
+                className="btn-comment"
+                disabled={isPostingComment || !commentText.trim()}
+              >
+                {isPostingComment ? "Posting..." : "Post Comment"}
+              </button>
+            </form>
+
+            <div className="comments-list">
+              {comments.length === 0 ? (
+                <p className="no-comments">No comments yet. Be the first to comment.</p>
+              ) : (
+                comments.map((comment, index) => (
+                  <div className="comment-item" key={comment.id || index}>
+                    <div className="comment-author">
+                      {comment.username || comment.authorName || comment.userName || "User"}
+                    </div>
+                    <p>{comment.content || comment.comment}</p>
+                    {comment.createdAt && (
+                      <span className="comment-date">{formatDate(comment.createdAt)}</span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── FOOTER ACTIONS ── */}
         <footer className="article-footer">
