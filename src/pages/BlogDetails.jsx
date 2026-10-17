@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getBlogById } from "../api/blogApi";
 import { getComments, addComment } from "../api/commentApi";
@@ -8,6 +8,338 @@ import { Client } from "@stomp/stompjs";
 import "./styles.css";
 
 const BASE_URL = "https://chronicle-blogs.duckdns.org";
+const MAX_COMMENT_LENGTH = 500;
+const NOTICE_DURATION_MS = 3000;
+
+/* =====================================================================
+   Pure helpers
+   ===================================================================== */
+
+const isAuthError = (err) => [401, 403].includes(err?.response?.status);
+
+const normalizeComment = (raw, index) => ({
+  id: raw.id ?? `tmp-${index}`,
+  author: raw.username || raw.authorName || raw.userName || "Reader",
+  body: raw.content || raw.comment || "",
+  createdAt: raw.createdAt || null,
+});
+
+const timeAgo = (iso) => {
+  if (!iso) return "";
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (Number.isNaN(seconds)) return "";
+  if (seconds < 60) return "just now";
+  const units = [
+    ["year", 31536000],
+    ["month", 2592000],
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60],
+  ];
+  for (const [name, size] of units) {
+    const value = Math.floor(seconds / size);
+    if (value >= 1) return `${value} ${name}${value > 1 ? "s" : ""} ago`;
+  }
+  return "";
+};
+
+const initialsOf = (name) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "R";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const calculateReadTime = (text) => {
+  if (!text) return "5 min read";
+  const words = text.trim().split(/\s+/).length;
+  return `${Math.ceil(words / 200)} min read`;
+};
+
+/* =====================================================================
+   Icons
+   ===================================================================== */
+
+const HeartIcon = ({ filled }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"
+       fill={filled ? "currentColor" : "none"} stroke="currentColor"
+       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" />
+  </svg>
+);
+
+const CommentIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const ShareIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+    <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+       stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+/* =====================================================================
+   SocialSection: like, share, comments (self-contained)
+   ===================================================================== */
+
+function SocialSection({ blogId, title }) {
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+
+  const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState(null); // { type, text }
+
+  const noticeTimer = useRef(null);
+  const copiedTimer = useRef(null);
+
+  const showNotice = useCallback((text, type = "error") => {
+    clearTimeout(noticeTimer.current);
+    setNotice({ text, type });
+    noticeTimer.current = setTimeout(() => setNotice(null), NOTICE_DURATION_MS);
+  }, []);
+
+  useEffect(
+    () => () => {
+      clearTimeout(noticeTimer.current);
+      clearTimeout(copiedTimer.current);
+    },
+    []
+  );
+
+  const loadLikeCount = useCallback(async () => {
+    try {
+      const res = await getLikeCount(blogId);
+      const value = typeof res.data === "number" ? res.data : res.data?.count ?? 0;
+      setLikeCount(value);
+      if (typeof res.data?.likedByMe === "boolean") setLiked(res.data.likedByMe);
+    } catch (err) {
+      console.error("Error loading like count:", err);
+    }
+  }, [blogId]);
+
+  const loadComments = useCallback(async () => {
+    try {
+      const res = await getComments(blogId);
+      const list = Array.isArray(res.data) ? res.data.map(normalizeComment) : [];
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setComments(list);
+    } catch (err) {
+      console.error("Error loading comments:", err);
+    }
+  }, [blogId]);
+
+  useEffect(() => {
+    loadLikeCount();
+    loadComments();
+  }, [loadLikeCount, loadComments]);
+
+  // Optimistic like with rollback on failure
+  const handleLike = async () => {
+    if (isLiking) return;
+
+    const previous = { liked, likeCount };
+    setLiked(!liked);
+    setLikeCount((count) => Math.max(0, count + (liked ? -1 : 1)));
+    setIsLiking(true);
+
+    try {
+      const res = await toggleLike(blogId);
+      if (typeof res?.data?.liked === "boolean") setLiked(res.data.liked);
+      await loadLikeCount();
+    } catch (err) {
+      console.error("Error toggling like:", err);
+      setLiked(previous.liked);
+      setLikeCount(previous.likeCount);
+      showNotice(
+        isAuthError(err)
+          ? "Log in to like this story."
+          : "Couldn't save your like. Try again."
+      );
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: title || "Story", url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        showNotice("Couldn't share this story. Copy the link from the address bar.");
+      }
+    }
+  };
+
+  const trimmed = commentText.trim();
+  const canPost = trimmed.length > 0 && !isPosting;
+
+  const submitComment = async () => {
+    if (!canPost) return;
+    try {
+      setIsPosting(true);
+      await addComment(blogId, { content: trimmed });
+      setCommentText("");
+      await loadComments();
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      showNotice(
+        isAuthError(err)
+          ? "Log in to join the discussion."
+          : "Couldn't post your comment. Try again."
+      );
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    submitComment();
+  };
+
+  const handleKeyDown = (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      submitComment();
+    }
+  };
+
+  const likeLabel = useMemo(
+    () => `${likeCount} ${likeCount === 1 ? "like" : "likes"}`,
+    [likeCount]
+  );
+
+  return (
+    <section className="social" aria-label="Reactions and comments">
+      <div className="social-bar">
+        <button
+          type="button"
+          className={`social-btn social-btn--like ${liked ? "is-active" : ""}`}
+          onClick={handleLike}
+          aria-pressed={liked}
+          aria-label={liked ? `Unlike this story, ${likeLabel}` : `Like this story, ${likeLabel}`}
+        >
+          <HeartIcon filled={liked} />
+          <span className="social-count">{likeCount}</span>
+          <span className="social-btn-text">{likeCount === 1 ? "Like" : "Likes"}</span>
+        </button>
+
+        <a className="social-btn" href="#comments">
+          <CommentIcon />
+          <span className="social-count">{comments.length}</span>
+          <span className="social-btn-text">
+            {comments.length === 1 ? "Comment" : "Comments"}
+          </span>
+        </a>
+
+        <button
+          type="button"
+          className={`social-btn social-btn--share ${copied ? "is-active" : ""}`}
+          onClick={handleShare}
+        >
+          {copied ? <CheckIcon /> : <ShareIcon />}
+          <span className="social-btn-text">{copied ? "Link copied" : "Share"}</span>
+        </button>
+      </div>
+
+      <div className="social-notice-slot" role="status" aria-live="polite">
+        {notice && (
+          <p className={`social-notice social-notice--${notice.type}`}>{notice.text}</p>
+        )}
+      </div>
+
+      <div className="comments" id="comments">
+        <h3 className="comments-title">Discussion</h3>
+
+        <form className="comment-form" onSubmit={handleSubmit}>
+          <label htmlFor="comment-input" className="visually-hidden">
+            Write a comment
+          </label>
+          <textarea
+            id="comment-input"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value.slice(0, MAX_COMMENT_LENGTH))}
+            onKeyDown={handleKeyDown}
+            placeholder="Share what this story made you think about"
+            rows={3}
+          />
+          <div className="comment-form-footer">
+            <span className="comment-hint">
+              {commentText.length}/{MAX_COMMENT_LENGTH}
+              <span className="comment-hint-keys"> · Ctrl+Enter to post</span>
+            </span>
+            <button type="submit" className="comment-submit" disabled={!canPost}>
+              {isPosting ? "Posting..." : "Post comment"}
+            </button>
+          </div>
+        </form>
+
+        {comments.length === 0 ? (
+          <p className="comments-empty">No comments yet. Start the conversation.</p>
+        ) : (
+          <ul className="comment-list">
+            {comments.map((c) => (
+              <li className="comment" key={c.id}>
+                <span className="comment-avatar" aria-hidden="true">
+                  {initialsOf(c.author)}
+                </span>
+                <div className="comment-main">
+                  <div className="comment-head">
+                    <span className="comment-author">{c.author}</span>
+                    {c.createdAt && (
+                      <time className="comment-time" dateTime={c.createdAt}>
+                        {timeAgo(c.createdAt)}
+                      </time>
+                    )}
+                  </div>
+                  <p className="comment-body">{c.body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* =====================================================================
+   BlogDetail page
+   ===================================================================== */
 
 export default function BlogDetail() {
   const { id } = useParams();
@@ -20,19 +352,11 @@ export default function BlogDetail() {
   const [isConnected, setIsConnected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [flashUpdate, setFlashUpdate] = useState(false);
-  const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState("");
-  const [likeCount, setLikeCount] = useState(0);
-  const [isLiking, setIsLiking] = useState(false);
-  const [isPostingComment, setIsPostingComment] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
 
-  // -----------------------------------
-  // Load Blog via REST
-  // -----------------------------------
+  // Load blog via REST
   const loadBlog = useCallback(async () => {
     try {
       const res = await getBlogById(id);
@@ -46,9 +370,7 @@ export default function BlogDetail() {
     }
   }, [id]);
 
-  // -----------------------------------
   // Connect WebSocket
-  // -----------------------------------
   const connectSocket = useCallback(() => {
     const socket = new SockJS(`${BASE_URL}/ws`);
 
@@ -62,19 +384,15 @@ export default function BlogDetail() {
       console.log("WebSocket Connected");
       setIsConnected(true);
 
-      subscriptionRef.current = client.subscribe(
-        `/topic/blog/${id}`,
-        (message) => {
-          const updatedBlog = JSON.parse(message.body);
-          console.log("Realtime update received");
-          setBlog(updatedBlog);
-          setTitle(updatedBlog.title);
-          setContent(updatedBlog.content);
-          // Flash the content on real-time update
-          setFlashUpdate(true);
-          setTimeout(() => setFlashUpdate(false), 600);
-        }
-      );
+      subscriptionRef.current = client.subscribe(`/topic/blog/${id}`, (message) => {
+        const updatedBlog = JSON.parse(message.body);
+        console.log("Realtime update received");
+        setBlog(updatedBlog);
+        setTitle(updatedBlog.title);
+        setContent(updatedBlog.content);
+        setFlashUpdate(true);
+        setTimeout(() => setFlashUpdate(false), 600);
+      });
     };
 
     client.onDisconnect = () => {
@@ -85,9 +403,7 @@ export default function BlogDetail() {
     stompClientRef.current = client;
   }, [id]);
 
-  // -----------------------------------
-  // Publish Update via WebSocket
-  // -----------------------------------
+  // Publish update via WebSocket
   const handleSave = () => {
     if (!stompClientRef.current || !title.trim() || !content.trim()) return;
 
@@ -95,11 +411,7 @@ export default function BlogDetail() {
 
     stompClientRef.current.publish({
       destination: "/app/edit-blog",
-      body: JSON.stringify({
-        id: blog.id,
-        title,
-        content,
-      }),
+      body: JSON.stringify({ id: blog.id, title, content }),
     });
 
     setTimeout(() => {
@@ -109,131 +421,25 @@ export default function BlogDetail() {
   };
 
   const handleCancel = () => {
-    // Revert to current blog data
     setTitle(blog.title);
     setContent(blog.content);
     setIsEditing(false);
   };
 
-  // -----------------------------------
-  // Like / Comments / Share
-  // -----------------------------------
-  const loadComments = useCallback(async () => {
-    try {
-      const res = await getComments(id);
-      setComments(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("Error loading comments:", err);
-    }
-  }, [id]);
-
-  const loadLikeCount = useCallback(async () => {
-    try {
-      const res = await getLikeCount(id);
-      const value = typeof res.data === "number" ? res.data : (res.data?.count ?? 0);
-      setLikeCount(value);
-    } catch (err) {
-      console.error("Error loading like count:", err);
-    }
-  }, [id]);
-
-  const handleLike = async () => {
-    try {
-      setIsLiking(true);
-      await toggleLike(id);
-      await loadLikeCount();
-    } catch (err) {
-      console.error("Error toggling like:", err);
-      alert("Please login to like this story.");
-    } finally {
-      setIsLiking(false);
-    }
-  };
-
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
-
-    try {
-      setIsPostingComment(true);
-      await addComment(id, { content: commentText.trim() });
-      setCommentText("");
-      await loadComments();
-    } catch (err) {
-      console.error("Error adding comment:", err);
-      alert("Please login to comment.");
-    } finally {
-      setIsPostingComment(false);
-    }
-  };
-
-  const handleShare = async () => {
-    const shareUrl = window.location.href;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: blog?.title || "Story",
-          url: shareUrl,
-        });
-        return;
-      }
-
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Error sharing story:", err);
-    }
-  };
-
-  // -----------------------------------
-  // Cleanup
-  // -----------------------------------
   const disconnectSocket = () => {
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-    }
-    if (stompClientRef.current) {
-      stompClientRef.current.deactivate();
-    }
+    if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
+    if (stompClientRef.current) stompClientRef.current.deactivate();
   };
 
-  // -----------------------------------
-  // Lifecycle
-  // -----------------------------------
   useEffect(() => {
     loadBlog();
-    loadComments();
-    loadLikeCount();
     connectSocket();
     return () => {
       disconnectSocket();
     };
-  }, [id, loadBlog, loadComments, loadLikeCount, connectSocket]);
+  }, [id, loadBlog, connectSocket]);
 
-  // -----------------------------------
-  // Helpers
-  // -----------------------------------
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const calculateReadTime = (text) => {
-    if (!text) return "5 min read";
-    const words = text.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / 200);
-    return `${minutes} min read`;
-  };
-
-  // -----------------------------------
-  // UI States
-  // -----------------------------------
+  // UI states
   if (loading) {
     return (
       <div className="blog-detail-page">
@@ -268,27 +474,17 @@ export default function BlogDetail() {
   return (
     <div className="blog-detail-page">
       <article className="article-container">
-
         {/* ── HEADER ── */}
         <header className="article-header">
-
-          {/* Back Navigation */}
           <Link to="/blogs" className="back-link">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" strokeWidth="2">
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
             All Stories
           </Link>
 
-          {/* Meta Row */}
           <div className="article-meta">
             <span className="article-category">Story</span>
             <span className="meta-divider">•</span>
@@ -297,7 +493,6 @@ export default function BlogDetail() {
             <span className="article-date">{publishDate}</span>
             <span className="meta-divider">•</span>
 
-            {/* Live WebSocket Indicator */}
             {isConnected ? (
               <span className="live-indicator">
                 <span className="live-dot" />
@@ -311,18 +506,14 @@ export default function BlogDetail() {
             )}
           </div>
 
-          {/* Edit Mode Banner */}
           {isEditing && (
             <div className="edit-mode-banner">
               <span className="edit-mode-banner-icon">✏️</span>
               <span className="edit-mode-banner-text">Editing Mode</span>
-              <span className="edit-mode-banner-sub">
-                Changes will broadcast in real-time
-              </span>
+              <span className="edit-mode-banner-sub">Changes will broadcast in real-time</span>
             </div>
           )}
 
-          {/* Title — View vs Edit */}
           {isEditing ? (
             <input
               className="edit-title-input"
@@ -337,8 +528,6 @@ export default function BlogDetail() {
               <div className="title-underline" />
             </>
           )}
-
-          
         </header>
 
         {/* ── CONTENT ── */}
@@ -347,9 +536,7 @@ export default function BlogDetail() {
             <div className="edit-content-wrapper">
               <div className="edit-toolbar">
                 <span className="edit-toolbar-label">Content</span>
-                <span className="edit-toolbar-hint">
-                  Each new line becomes a paragraph
-                </span>
+                <span className="edit-toolbar-hint">Each new line becomes a paragraph</span>
               </div>
               <textarea
                 className="edit-content-textarea"
@@ -362,84 +549,26 @@ export default function BlogDetail() {
           ) : (
             <div className="content-body">
               {blog.content?.split("\n").map((paragraph, index) =>
-                paragraph.trim() ? (
-                  <p key={index}>{paragraph}</p>
-                ) : null
+                paragraph.trim() ? <p key={index}>{paragraph}</p> : null
               )}
             </div>
           )}
         </div>
 
-        {/* ── SOCIAL ACTIONS ── */}
-        <section className="article-social-section">
-          <div className="article-social-actions">
-            <button className="btn-like" onClick={handleLike} disabled={isLiking}>
-              ♥ {isLiking ? "..." : likeCount} {likeCount === 1 ? "Like" : "Likes"}
-            </button>
-
-            <button className="btn-share" onClick={handleShare}>
-              {copied ? "✓ Link Copied" : "↗ Share"}
-            </button>
-          </div>
-
-          <div className="comments-section">
-            <h3>Comments ({comments.length})</h3>
-
-            <form className="comment-form" onSubmit={handleAddComment}>
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                rows="3"
-              />
-              <button
-                type="submit"
-                className="btn-comment"
-                disabled={isPostingComment || !commentText.trim()}
-              >
-                {isPostingComment ? "Posting..." : "Post Comment"}
-              </button>
-            </form>
-
-            <div className="comments-list">
-              {comments.length === 0 ? (
-                <p className="no-comments">No comments yet. Be the first to comment.</p>
-              ) : (
-                comments.map((comment, index) => (
-                  <div className="comment-item" key={comment.id || index}>
-                    <div className="comment-author">
-                      {comment.username || comment.authorName || comment.userName || "User"}
-                    </div>
-                    <p>{comment.content || comment.comment}</p>
-                    {comment.createdAt && (
-                      <span className="comment-date">{formatDate(comment.createdAt)}</span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </section>
+        {/* ── LIKE / COMMENTS / SHARE ── */}
+        <SocialSection blogId={id} title={blog.title} />
 
         {/* ── FOOTER ACTIONS ── */}
         <footer className="article-footer">
           <div className="footer-actions">
-
-            {/* Edit / Cancel Toggle */}
             <button
               className="btn-edit"
               onClick={isEditing ? handleCancel : () => setIsEditing(true)}
             >
               {isEditing ? (
                 <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -447,14 +576,8 @@ export default function BlogDetail() {
                 </>
               ) : (
                 <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
@@ -463,7 +586,6 @@ export default function BlogDetail() {
               )}
             </button>
 
-            {/* Save — only in edit mode */}
             {isEditing && (
               <button
                 className="btn-save"
@@ -477,14 +599,8 @@ export default function BlogDetail() {
                   </>
                 ) : (
                   <>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                     Save & Publish
