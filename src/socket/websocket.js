@@ -1,7 +1,7 @@
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 
-const BASE_URL = "https://demo-cicd-latest-6p2b.onrender.com";
+const BASE_URL = "https://chronicle-blogs.duckdns.org";
 
 let stompClient = null;
 
