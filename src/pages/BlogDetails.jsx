@@ -288,7 +288,7 @@ const isAuthError = (err) => [401, 403].includes(err?.response?.status);
 const normalizeComment = (raw, index) => ({
   id: raw.id ?? `tmp-${index}`,
   author: raw.username || raw.authorName || raw.userName || "Reader",
-  body: raw.content || raw.comment || "",
+  body: raw.text || raw.content || raw.comment || "",
   createdAt: raw.createdAt || null,
 });
 
@@ -403,7 +403,8 @@ function SocialSection({ blogId, title }) {
   const loadLikeCount = useCallback(async () => {
     try {
       const res = await getLikeCount(blogId);
-      const value = typeof res.data === "number" ? res.data : res.data?.count ?? 0;
+      const value =
+        typeof res.data === "number" ? res.data : res.data?.likes ?? res.data?.count ?? 0;
       setLikeCount(value);
       if (typeof res.data?.likedByMe === "boolean") setLiked(res.data.likedByMe);
     } catch (err) {
@@ -414,7 +415,9 @@ function SocialSection({ blogId, title }) {
   const loadComments = useCallback(async () => {
     try {
       const res = await getComments(blogId);
-      const list = Array.isArray(res.data) ? res.data.map(normalizeComment) : [];
+      // Backend sends { blogId, comments: { content: [...] } } (a Spring Page)
+      const raw = res.data?.comments?.content ?? res.data?.comments ?? res.data;
+      const list = Array.isArray(raw) ? raw.map(normalizeComment) : [];
       list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       setComments(list);
     } catch (err) {
@@ -479,7 +482,7 @@ function SocialSection({ blogId, title }) {
     if (!canPost) return;
     try {
       setIsPosting(true);
-      await addComment(blogId, { content: trimmed });
+      await addComment(blogId, trimmed);
       setCommentText("");
       await loadComments();
     } catch (err) {
